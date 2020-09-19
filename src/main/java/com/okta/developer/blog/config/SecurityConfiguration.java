@@ -3,6 +3,7 @@ package com.okta.developer.blog.config;
 import com.okta.developer.blog.security.*;
 import com.okta.developer.blog.security.SecurityUtils;
 import com.okta.developer.blog.security.oauth2.AudienceValidator;
+import com.okta.developer.blog.security.oauth2.CustomClaimConverter;
 import com.okta.developer.blog.security.oauth2.JwtGrantedAuthorityConverter;
 import io.github.jhipster.config.JHipsterProperties;
 import java.util.*;
@@ -100,6 +101,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
         OAuth2TokenValidator<Jwt> withAudience = new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
 
         jwtDecoder.setJwtValidator(withAudience);
+        jwtDecoder.setClaimSetConverter(new CustomClaimConverter());
 
         return jwtDecoder;
     }
