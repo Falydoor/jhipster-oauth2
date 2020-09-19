@@ -17,6 +17,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 public class CustomClaimConverter implements Converter<Map<String, Object>, Map<String, Object>> {
@@ -29,6 +30,8 @@ public class CustomClaimConverter implements Converter<Map<String, Object>, Map<
     private final RestTemplate restTemplate;
 
     private final ClientRegistration registration;
+
+    private final Map<String, ObjectNode> users = new HashMap<>();
 
     public CustomClaimConverter(ClientRegistration registration) {
         this.registration = registration;
@@ -44,12 +47,15 @@ public class CustomClaimConverter implements Converter<Map<String, Object>, Map<
                 set("Authorization", "Bearer " + token);
             }};
 
-            // Retrieve user infos from OAuth provider
-            ResponseEntity<ObjectNode> userInfo = restTemplate.exchange(registration.getProviderDetails().getUserInfoEndpoint().getUri(), HttpMethod.GET, new HttpEntity<String>(headers), ObjectNode.class);
-            log.debug("USER INFO -> " + userInfo.getBody());
+            // Retrieve user infos from OAuth provider if not already loaded
+            ObjectNode user = users.computeIfAbsent(claims.get("sub").toString(), s -> {
+                ResponseEntity<ObjectNode> userInfo = restTemplate.exchange(registration.getProviderDetails().getUserInfoEndpoint().getUri(), HttpMethod.GET, new HttpEntity<String>(headers), ObjectNode.class);
+                log.debug("USER INFO -> " + userInfo.getBody());
+                return userInfo.getBody();
+            });
 
-            // Custom claims are added
-            convertedClaims.put("preferred_username", userInfo.getBody().get("preferred_username").asText());
+            // Add custom claims
+            convertedClaims.put("preferred_username", user.get("preferred_username").asText());
         }
         return convertedClaims;
     }
