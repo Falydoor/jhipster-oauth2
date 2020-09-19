@@ -8,6 +8,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.jwt.MappedJwtClaimSetConverter;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
@@ -27,7 +28,10 @@ public class CustomClaimConverter implements Converter<Map<String, Object>, Map<
 
     private final RestTemplate restTemplate;
 
-    public CustomClaimConverter() {
+    private final ClientRegistration registration;
+
+    public CustomClaimConverter(ClientRegistration registration) {
+        this.registration = registration;
         this.restTemplate = new RestTemplate();
     }
 
@@ -41,8 +45,7 @@ public class CustomClaimConverter implements Converter<Map<String, Object>, Map<
             }};
 
             // Retrieve user infos from OAuth provider
-            String path = (convertedClaims.get("iss").toString().contains("okta")) ? "/v1/userinfo" : "/protocol/openid-connect/userinfo";
-            ResponseEntity<ObjectNode> userInfo = restTemplate.exchange(convertedClaims.get("iss") + path, HttpMethod.GET, new HttpEntity<String>(headers), ObjectNode.class);
+            ResponseEntity<ObjectNode> userInfo = restTemplate.exchange(registration.getProviderDetails().getUserInfoEndpoint().getUri(), HttpMethod.GET, new HttpEntity<String>(headers), ObjectNode.class);
             log.debug("USER INFO -> " + userInfo.getBody());
 
             // Custom claims are added
