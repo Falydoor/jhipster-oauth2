@@ -1,5 +1,6 @@
 package com.okta.developer.blog.security.oauth2;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +19,10 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class CustomClaimConverter implements Converter<Map<String, Object>, Map<String, Object>> {
     private final Logger log = LoggerFactory.getLogger(CustomClaimConverter.class);
@@ -55,7 +59,15 @@ public class CustomClaimConverter implements Converter<Map<String, Object>, Map<
             });
 
             // Add custom claims
-            convertedClaims.put("preferred_username", user.get("preferred_username").asText());
+            if (user != null) {
+                convertedClaims.put("preferred_username", user.get("preferred_username").asText());
+                convertedClaims.put("given_name", user.get("given_name").asText());
+                convertedClaims.put("family_name", user.get("family_name").asText());
+                List<String> groups = StreamSupport.stream(user.get("groups").spliterator(), false)
+                    .map(JsonNode::asText)
+                    .collect(Collectors.toList());
+                convertedClaims.put("groups", groups);
+            }
         }
         return convertedClaims;
     }
